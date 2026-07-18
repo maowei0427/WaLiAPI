@@ -1,4 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
+import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { channelApi, apiKeyApi, serverApi } from "../lib/api";
 import type { Channel, ApiKey, ServerStatus } from "../types";
 import { BookOpen, Copy, Check, Play, Loader2 } from "lucide-react";
@@ -6,12 +8,12 @@ import { BookOpen, Copy, Check, Play, Loader2 } from "lucide-react";
 type Platform = "curl-mac" | "curl-windows" | "javascript" | "typescript" | "java";
 type TestState = "idle" | "running" | "success" | "error";
 
-const tabs: { id: Platform; label: string; color: string }[] = [
-  { id: "curl-mac", label: "cURL Mac/Linux", color: "text-green-400 border-green-400" },
-  { id: "curl-windows", label: "cURL Windows", color: "text-blue-400 border-blue-400" },
-  { id: "javascript", label: "JavaScript", color: "text-yellow-400 border-yellow-400" },
-  { id: "typescript", label: "TypeScript", color: "text-blue-500 border-blue-500" },
-  { id: "java", label: "Java", color: "text-orange-400 border-orange-400" },
+const tabs: { id: Platform; label: string; color: string; lang: string }[] = [
+  { id: "curl-mac", label: "cURL Mac/Linux", color: "text-green-400 border-green-400", lang: "bash" },
+  { id: "curl-windows", label: "cURL Windows", color: "text-blue-400 border-blue-400", lang: "batch" },
+  { id: "javascript", label: "JavaScript", color: "text-yellow-400 border-yellow-400", lang: "javascript" },
+  { id: "typescript", label: "TypeScript", color: "text-blue-500 border-blue-500", lang: "typescript" },
+  { id: "java", label: "Java", color: "text-orange-400 border-orange-400", lang: "java" },
 ];
 
 export function UsagePage() {
@@ -194,9 +196,21 @@ public class XapiTest {
             </button>
           ))}
         </div>
-        {/* Code content */}
+        {/* Code content with syntax highlighting */}
         <div className="relative">
-          <pre className="p-4 text-sm font-mono overflow-auto max-h-96 bg-muted/30 rounded-lg">{scripts[activeTab]}</pre>
+          <SyntaxHighlighter
+            language={tabs.find(t => t.id === activeTab)?.lang || "bash"}
+            style={oneDark}
+            customStyle={{
+              margin: 0,
+              borderRadius: "0.5rem",
+              fontSize: "0.875rem",
+              maxHeight: "24rem",
+              overflow: "auto",
+            }}
+          >
+            {scripts[activeTab]}
+          </SyntaxHighlighter>
           <button onClick={() => copy(scripts[activeTab], activeTab)} className="absolute top-2 right-2 p-2 rounded-lg hover:bg-muted border border-border bg-card">
             {copied === activeTab ? <Check size={14} className="text-green-500" /> : <Copy size={14} />}
           </button>
