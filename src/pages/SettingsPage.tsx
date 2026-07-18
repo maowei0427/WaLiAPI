@@ -6,6 +6,7 @@ import { Save, RotateCcw, Check, Server, SlidersHorizontal, Palette, RefreshCw }
 export function SettingsPage() {
   const [settings, setSettings] = useState<Settings | null>(null);
   const [saved, setSaved] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
 
   useEffect(() => {
     settingsApi.get().then(setSettings).catch(() => {});
@@ -15,12 +16,18 @@ export function SettingsPage() {
 
   const handleSave = async () => {
     await settingsApi.save(settings);
+    await settingsApi.applyTheme(settings.ui_theme);
+    await settingsApi.setAutoStart(settings.auto_start);
+    document.documentElement.setAttribute("data-theme", settings.ui_theme || "dark");
+    document.documentElement.lang = settings.ui_language || "zh-CN";
     setSaved(true);
+    setMessage("设置已保存，主题与桌面行为已应用。");
     setTimeout(() => setSaved(false), 2000);
   };
 
   const handleRestart = async () => {
     await serverApi.restart();
+    setMessage("服务已触发重启，请稍候查看状态。");
   };
 
   return (
@@ -35,6 +42,8 @@ export function SettingsPage() {
           {saved ? "已保存" : "保存设置"}
         </button>
       </div>
+
+      {message && <div className="surface-soft rounded-2xl px-4 py-3 text-sm text-primary">{message}</div>}
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
         <div className="surface rounded-[24px] p-6 space-y-5">
@@ -87,7 +96,7 @@ export function SettingsPage() {
                 <span className="text-sm">{label}</span>
                 <input
                   type="checkbox"
-                  checked={settings[key as keyof Settings] as boolean}
+                  checked={Boolean(settings[key as keyof Settings])}
                   onChange={e => setSettings({ ...settings, [key]: e.target.checked })}
                   className="h-5 w-5"
                 />
@@ -153,8 +162,9 @@ export function SettingsPage() {
               <label className="mb-2 block text-sm font-medium">重试次数</label>
               <input
                 type="number"
+                min={0}
                 value={settings.retry_times}
-                onChange={e => setSettings({ ...settings, retry_times: parseInt(e.target.value) || 0 })}
+                onChange={e => setSettings({ ...settings, retry_times: Math.max(0, parseInt(e.target.value) || 0) })}
                 className="w-full rounded-2xl border border-border bg-background/70 px-4 py-3 text-sm"
               />
             </div>

@@ -11,7 +11,9 @@ use tauri::{
     menu::{Menu, MenuItem},
     tray::TrayIconBuilder,
     Manager,
+    WindowEvent,
 };
+use tauri_plugin_store::StoreExt;
 
 pub struct AppState {
     pub db: Arc<db::Database>,
@@ -50,7 +52,6 @@ pub fn run() {
             None::<Vec<&str>>,
         ))
         .setup(|app| {
-            // Setup tray
             let quit_item = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
             let show_item = MenuItem::with_id(app, "show", "Show", true, None::<&str>)?;
             let menu = Menu::with_items(app, &[&show_item, &quit_item])?;
@@ -64,6 +65,7 @@ pub fn run() {
                     "show" => {
                         if let Some(window) = app.get_webview_window("main") {
                             let _ = window.show();
+                            let _ = window.unminimize();
                             let _ = window.set_focus();
                         }
                     }
@@ -71,7 +73,28 @@ pub fn run() {
                 })
                 .build(app)?;
 
-            // Initialize database
+            if let Some(window) = app.get_webview_window("main") {
+                let app_handle = app.handle().clone();
+                window.on_window_event(move |event| match event {
+                    WindowEvent::CloseRequested { api, .. } => {
+                        if should_close_to_tray(&app_handle) {
+                            api.prevent_close();
+                            if let Some(main_window) = app_handle.get_webview_window("main") {
+                                let _ = main_window.hide();
+                            }
+                        }
+                    }
+                    WindowEvent::Focused(false) => {
+                        if should_minimize_to_tray(&app_handle) {
+                            if let Some(main_window) = app_handle.get_webview_window("main") {
+                                let _ = main_window.hide();
+                            }
+                        }
+                    }
+                    _ => {}
+                });
+            }
+
             let app_handle = app.handle().clone();
             tauri::async_runtime::block_on(async move {
                 let db = db::Database::new(&app_handle).await;
@@ -83,7 +106,6 @@ pub fn run() {
                 });
                 app_handle.manage(state.clone());
 
-                // Start HTTP server
                 let handle = app_handle.clone();
                 tauri::async_runtime::spawn(async move {
                     let _ = server::start_server(handle, state).await;
@@ -93,30 +115,40 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
-            // Channel commands
             commands::channel::get_channels,
             commands::channel::get_channel,
             commands::channel::create_channel,
             commands::channel::update_channel,
             commands::channel::delete_channel,
             commands::channel::test_channel,
-            // API Key commands
             commands::api_key::get_api_keys,
             commands::api_key::create_api_key,
             commands::api_key::update_api_key,
             commands::api_key::delete_api_key,
-            // Log commands
             commands::log::get_logs,
             commands::log::get_log_stats,
-            // Stats commands
             commands::stats::get_dashboard_stats,
-            // Settings commands
             commands::settings::get_settings,
             commands::settings::save_settings,
-            // Server commands
+            commands::settings::apply_theme,
+            commands::settings::set_auto_start,
             commands::server::get_server_status,
             commands::server::restart_server,
         ])
         .run(tauri::generate_context!())
         .expect("error while running xapi");
+}
+
+fn should_close_to_tray(app: &tauri::AppHandle) -> bool {
+    app.store("settings.json")
+        .ok()
+        .and_then(|store| store.get("general.close_to_tray").and_then(|v| v.as_bool()))
+        .unwrap_or(true)
+}
+
+fn should_minimize_to_tray(app: &tauri::AppHandle) -> bool {
+    app.store("settings.json")
+        .ok()
+        .and_then(|store| store.get("general.minimize_to_tray").and_then(|v| v.as_bool()))
+        .unwrap_or(false)
 }

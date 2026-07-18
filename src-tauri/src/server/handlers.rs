@@ -44,7 +44,7 @@ pub async fn handle_chat_completions(
     if is_stream {
         handle_stream(shared, json, key_record.id, key_record.name).await
     } else {
-        match proxy::handle_request(&repo, &key_record.id, &key_record.name, json, false).await {
+        match proxy::handle_request(&repo, &shared.app, &key_record.id, &key_record.name, json, false).await {
             Ok(result) => (StatusCode::OK, Json(result.body)).into_response(),
             Err((code, msg)) => {
                 let err_body = serde_json::json!({
@@ -81,9 +81,16 @@ async fn handle_stream(
         stream: true,
     };
 
+    let (retry_enabled, retry_times) = proxy::get_retry_settings(&shared.app);
+    let max_attempts = if retry_enabled {
+        (retry_times.max(0) as usize + 1).min(selected_channels.len())
+    } else {
+        1
+    };
+
     let mut last_error = None;
 
-    for (attempt, channel) in selected_channels.into_iter().enumerate() {
+    for (attempt, channel) in selected_channels.into_iter().take(max_attempts).enumerate() {
         let config = Dispatcher::channel_to_config(&channel);
         let adaptor = get_adaptor(&channel.channel_type);
 
@@ -173,8 +180,9 @@ async fn handle_stream(
     let err_body = serde_json::json!({
         "error": {
             "message": format!(
-                "All stream channels failed for model {}: {}",
+                "All stream channels failed for model {} after {} attempt(s): {}",
                 model,
+                max_attempts,
                 last_error.unwrap_or_else(|| "unknown upstream error".to_string())
             ),
             "type": "upstream_error"

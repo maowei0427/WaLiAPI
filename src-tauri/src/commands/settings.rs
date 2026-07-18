@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
-use tauri::AppHandle;
+use tauri::{AppHandle, Emitter, Manager};
+use tauri_plugin_autostart::ManagerExt;
 use tauri_plugin_store::StoreExt;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -93,5 +94,26 @@ pub async fn save_settings(settings: Settings, app: AppHandle) -> Result<(), Str
     store.set("retry.enabled", settings.retry_enabled);
     store.set("retry.times", settings.retry_times);
     store.save().map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn apply_theme(theme: String, app: AppHandle) -> Result<(), String> {
+    if let Some(window) = app.get_webview_window("main") {
+        window
+            .emit("theme-changed", serde_json::json!({ "theme": theme }))
+            .map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn set_auto_start(enabled: bool, app: AppHandle) -> Result<(), String> {
+    let autostart = app.autolaunch();
+    if enabled {
+        autostart.enable().map_err(|e| e.to_string())?;
+    } else {
+        autostart.disable().map_err(|e| e.to_string())?;
+    }
     Ok(())
 }

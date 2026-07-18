@@ -5,6 +5,8 @@ use crate::db::repository::Repository;
 use crate::utils;
 use std::sync::Arc;
 use std::time::Instant;
+use tauri::AppHandle;
+use tauri_plugin_store::StoreExt;
 
 pub struct ProxyResult {
     pub status: u16,
@@ -16,6 +18,7 @@ pub struct ProxyResult {
 
 pub async fn handle_request(
     repo: &Arc<Repository>,
+    app: &AppHandle,
     api_key_id: &str,
     api_key_name: &str,
     body: serde_json::Value,
@@ -40,9 +43,16 @@ pub async fn handle_request(
         stream: is_stream,
     };
 
+    let (retry_enabled, retry_times) = get_retry_settings(app);
+    let max_attempts = if retry_enabled {
+        (retry_times.max(0) as usize + 1).min(selected_channels.len())
+    } else {
+        1
+    };
+
     let mut last_error = None;
 
-    for (attempt, channel) in selected_channels.into_iter().enumerate() {
+    for (attempt, channel) in selected_channels.into_iter().take(max_attempts).enumerate() {
         let config = Dispatcher::channel_to_config(&channel);
         let adaptor = get_adaptor(&channel.channel_type);
         let attempt_start = Instant::now();
@@ -115,9 +125,25 @@ pub async fn handle_request(
     Err((
         502,
         format!(
-            "All channels failed for model {}: {}",
+            "All channels failed for model {} after {} attempt(s): {}",
             model,
+            max_attempts,
             last_error.unwrap_or_else(|| "unknown upstream error".to_string())
         ),
     ))
+}
+
+pub fn get_retry_settings(app: &AppHandle) -> (bool, i32) {
+    if let Ok(store) = app.store("settings.json") {
+        let enabled = store
+            .get("retry.enabled")
+            .and_then(|v| v.as_bool())
+            .unwrap_or(true);
+        let times = store
+            .get("retry.times")
+            .and_then(|v| v.as_i64())
+            .unwrap_or(2) as i32;
+        return (enabled, times);
+    }
+    (true, 2)
 }

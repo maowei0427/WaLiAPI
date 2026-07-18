@@ -41,6 +41,8 @@ export const statsApi = {
 export const settingsApi = {
   get: () => invoke<Settings>("get_settings"),
   save: (settings: Settings) => invoke<void>("save_settings", { settings }),
+  applyTheme: (theme: string) => invoke<void>("apply_theme", { theme }),
+  setAutoStart: (enabled: boolean) => invoke<void>("set_auto_start", { enabled }),
 };
 
 // Server commands
