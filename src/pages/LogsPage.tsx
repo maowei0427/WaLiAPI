@@ -80,17 +80,17 @@ export function LogsPage() {
             <>
               {/* Table header + body share the scroll area */}
               <div className="flex-1 overflow-auto">
-                <table className="w-full text-sm">
+                <table className="w-full table-fixed text-sm">
                   <thead className="sticky top-0 z-10 border-b border-border bg-white/90 backdrop-blur text-muted-foreground">
                     <tr>
                       <th className="w-8 px-3 py-3"></th>
-                      <th className="px-3 py-3 text-left font-medium">时间</th>
-                      <th className="px-3 py-3 text-left font-medium">密钥</th>
-                      <th className="px-3 py-3 text-left font-medium">渠道</th>
+                      <th className="w-32 px-3 py-3 text-left font-medium">时间</th>
+                      <th className="w-24 px-3 py-3 text-left font-medium">密钥</th>
+                      <th className="w-24 px-3 py-3 text-left font-medium">渠道</th>
                       <th className="px-3 py-3 text-left font-medium">模型</th>
-                      <th className="px-3 py-3 text-left font-medium">状态</th>
-                      <th className="px-3 py-3 text-right font-medium">Token</th>
-                      <th className="px-3 py-3 text-right font-medium">耗时</th>
+                      <th className="w-20 px-3 py-3 text-left font-medium">状态</th>
+                      <th className="w-20 px-3 py-3 text-right font-medium">Token</th>
+                      <th className="w-20 px-3 py-3 text-right font-medium">耗时</th>
                       <th className="w-10 px-3 py-3"></th>
                     </tr>
                   </thead>
@@ -164,10 +164,10 @@ function LogRow({
             {expanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
           </button>
         </td>
-        <td className="px-3 py-2.5 text-xs text-muted-foreground whitespace-nowrap">{formatTime(log.created_at)}</td>
-        <td className="px-3 py-2.5 text-xs">{log.api_key_name || "-"}</td>
-        <td className="px-3 py-2.5 text-xs">{log.channel_name || "-"}</td>
-        <td className="px-3 py-2.5 text-xs font-mono">{log.model}</td>
+        <td className="px-3 py-2.5 text-xs text-muted-foreground whitespace-nowrap overflow-hidden">{formatTime(log.created_at)}</td>
+        <td className="px-3 py-2.5 text-xs overflow-hidden truncate">{log.api_key_name || "-"}</td>
+        <td className="px-3 py-2.5 text-xs overflow-hidden truncate">{log.channel_name || "-"}</td>
+        <td className="px-3 py-2.5 text-xs font-mono overflow-hidden truncate">{log.model}</td>
         <td className="px-3 py-2.5 text-xs">
           <div className="flex items-center gap-1.5">
             <span className={`rounded-full px-2 py-0.5 ${log.status_code === 200 ? "bg-emerald-500/12 text-emerald-300" : "bg-red-500/12 text-red-300"}`}>
@@ -354,9 +354,9 @@ function RequestBodyView({ body }: { body: string }) {
               : JSON.stringify(msg.content);
             const truncated = content.length > 200 ? content.slice(0, 200) + "..." : content;
             return (
-              <div key={i} className="flex gap-2 rounded-md bg-black/5 px-3 py-1.5 text-xs">
+              <div key={i} className="flex gap-2 rounded-md bg-black/5 px-3 py-1.5 text-xs overflow-hidden">
                 <span className="shrink-0 font-semibold text-muted-foreground w-16">{role}</span>
-                <span className="font-mono text-muted-foreground truncate">{truncated}</span>
+                <span className="font-mono text-muted-foreground truncate min-w-0">{truncated}</span>
               </div>
             );
           })}
@@ -370,7 +370,7 @@ function RequestBodyView({ body }: { body: string }) {
 
       {/* Full JSON — only when expanded */}
       {expanded && (
-        <pre className="max-h-96 overflow-auto rounded-lg bg-black/5 p-3 text-xs font-mono whitespace-pre-wrap break-all">
+        <pre className="max-h-96 w-full overflow-auto rounded-lg bg-black/5 p-3 text-xs font-mono whitespace-pre-wrap break-all">
           {pretty}
         </pre>
       )}
