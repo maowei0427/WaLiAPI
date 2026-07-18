@@ -2,95 +2,7 @@ import { useState } from "react";
 import { channelApi } from "../lib/api";
 import type { Channel, CreateChannelInput } from "../types";
 import { CHANNEL_TYPES } from "../lib/constants";
-import { X, Plus, Check, ArrowRight } from "lucide-react";
-
-function ModelMappingInput({ models, existingMapping, onAdd }: {
-  models: string[];
-  existingMapping: Record<string, string>;
-  onAdd: (upstream: string, alias: string) => void;
-}) {
-  const [upstream, setUpstream] = useState("");
-  const [alias, setAlias] = useState("");
-  const [showCustom, setShowCustom] = useState(false);
-
-  // All aliases already used (keys of mapping)
-  const usedAliases = Object.keys(existingMapping);
-  // All upstream models already mapped (values of mapping)
-  const usedUpstream = Object.values(existingMapping);
-
-  const handleAdd = () => {
-    if (!upstream || !alias) return;
-    // Don't add duplicate aliases
-    if (usedAliases.includes(alias)) return;
-    onAdd(upstream, alias);
-    setUpstream("");
-    setAlias("");
-    setShowCustom(false);
-  };
-
-  return (
-    <div className="flex items-center gap-2">
-      {/* Left: upstream model — allow reusing models that are already mapped */}
-      <select
-        value={upstream}
-        onChange={e => setUpstream(e.target.value)}
-        className="flex-1 px-2 py-1.5 rounded-lg border border-border bg-background text-xs font-mono"
-      >
-        <option value="">选择上游模型</option>
-        {models.map(m => (
-          <option key={m} value={m}>{m}{usedUpstream.includes(m) ? " (已映射)" : ""}</option>
-        ))}
-      </select>
-      <ArrowRight size={14} className="text-muted-foreground shrink-0" />
-      {/* Right: alias name */}
-      {showCustom ? (
-        <div className="flex-1 flex gap-1">
-          <input
-            value={alias}
-            onChange={e => setAlias(e.target.value)}
-            onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); handleAdd(); } }}
-            className="flex-1 px-2 py-1.5 rounded-lg border border-border bg-background text-xs font-mono"
-            placeholder="输入自定义名称"
-            autoFocus
-          />
-          <button type="button" onClick={() => { setShowCustom(false); setAlias(""); }} className="p-1 hover:bg-muted rounded">
-            <X size={14} />
-          </button>
-        </div>
-      ) : (
-        <select
-          value={alias}
-          onChange={e => {
-            if (e.target.value === "__custom__") {
-              setShowCustom(true);
-              setAlias("");
-            } else {
-              setAlias(e.target.value);
-            }
-          }}
-          className="flex-1 px-2 py-1.5 rounded-lg border border-border bg-background text-xs font-mono"
-        >
-          <option value="">映射为（对外名称）</option>
-          {/* Show all models as alias options, even if already mapped */}
-          {models.map(m => (
-            <option key={m} value={m} disabled={usedAliases.includes(m)}>
-              {m}{usedAliases.includes(m) ? " (已使用)" : ""}
-            </option>
-          ))}
-          <option value="__custom__">+ 自定义名称...</option>
-        </select>
-      )}
-      <button
-        type="button"
-        onClick={handleAdd}
-        disabled={!upstream || !alias || usedAliases.includes(alias)}
-        className="p-1.5 rounded-lg border border-border hover:bg-muted disabled:opacity-50"
-      >
-        <Plus size={14} />
-      </button>
-    </div>
-  );
-}
+import { X, Plus, Check } from "lucide-react";
 
 export function ChannelForm({ editing, onClose, onSaved }: {
   editing: Channel | null;
@@ -105,35 +17,8 @@ export function ChannelForm({ editing, onClose, onSaved }: {
     models: editing?.models || ["gpt-4o-mini"],
     priority: editing?.priority ?? 0,
     weight: editing?.weight ?? 1,
-    model_mapping: editing?.model_mapping || {},
   });
   const [modelInput, setModelInput] = useState("");
-  // model_mapping: key=对外名称(alias), value=上游实际模型(upstream)
-  // Normalize: ensure values are strings (backend may return serde_json::Value)
-  const rawMapping = form.model_mapping || {};
-  const normalizedMapping: Record<string, string> = {};
-  for (const [k, v] of Object.entries(rawMapping)) {
-    normalizedMapping[k] = typeof v === "string" ? v : String(v);
-  }
-  const mappingEntries = Object.entries(normalizedMapping);
-
-  const addMapping = (upstream: string, alias: string) => {
-    if (!upstream || !alias) return;
-    setForm(prev => ({
-      ...prev,
-      model_mapping: { ...(prev.model_mapping || {}), [alias]: upstream },
-    }));
-  };
-
-  const removeMapping = (alias: string) => {
-    setForm(prev => {
-      const m: Record<string, string> = {};
-      for (const [k, v] of Object.entries(prev.model_mapping || {})) {
-        if (k !== alias) m[k] = typeof v === "string" ? v : String(v);
-      }
-      return { ...prev, model_mapping: m };
-    });
-  };
 
   const onTypeChange = (type: string) => {
     const info = CHANNEL_TYPES.find(t => t.value === type);
@@ -168,7 +53,6 @@ export function ChannelForm({ editing, onClose, onSaved }: {
         models: form.models,
         priority: form.priority,
         weight: form.weight,
-        model_mapping: form.model_mapping,
       });
     } else {
       await channelApi.create(form);
@@ -255,33 +139,6 @@ export function ChannelForm({ editing, onClose, onSaved }: {
                 </span>
               ))}
             </div>
-          </div>
-
-          {/* Model Mapping */}
-          <div>
-            <label className="text-sm font-medium block mb-1">模型映射</label>
-            <p className="text-xs text-muted-foreground mb-2">
-              左侧为渠道实际模型，右侧为对外暴露的名称。调用右侧名称时，实际转发给左侧模型。
-            </p>
-            {/* Existing mappings */}
-            {mappingEntries.length > 0 && (
-              <div className="space-y-1 mb-2">
-                {mappingEntries.map(([alias, upstream]) => (
-                  <div key={alias} className="flex items-center gap-2">
-                    <div className="flex-1 px-2 py-1 rounded bg-muted text-xs font-mono truncate">
-                      <span className="text-green-400">{alias}</span>
-                      <span className="text-muted-foreground mx-1">→</span>
-                      <span className="text-blue-400">{upstream}</span>
-                    </div>
-                    <button type="button" onClick={() => removeMapping(alias)} className="p-1 hover:text-red-500">
-                      <X size={14} />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-            {/* Add new mapping */}
-            <ModelMappingInput models={form.models} existingMapping={normalizedMapping} onAdd={addMapping} />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
