@@ -46,16 +46,50 @@ impl From<RequestLog> for LogDto {
     }
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct GetLogsInput {
+    pub limit: Option<i64>,
+    pub offset: Option<i64>,
+    pub keyword: Option<String>,
+    pub api_key_name: Option<String>,
+    pub channel_name: Option<String>,
+    pub model: Option<String>,
+    pub date_from: Option<String>,
+    pub date_to: Option<String>,
+}
+
 #[tauri::command]
 pub async fn get_logs(
-    limit: Option<i64>,
-    offset: Option<i64>,
+    input: GetLogsInput,
     state: tauri::State<'_, std::sync::Arc<AppState>>,
 ) -> Result<Vec<LogDto>, String> {
     let repo = Repository::new(state.db.pool.clone());
-    let limit = limit.unwrap_or(50);
-    let offset = offset.unwrap_or(0);
-    repo.get_logs(limit, offset).await.map_err(|e| e.to_string()).map(|ls| ls.into_iter().map(Into::into).collect())
+    let limit = input.limit.unwrap_or(50);
+    let offset = input.offset.unwrap_or(0);
+
+    let has_search = input.keyword.is_some()
+        || input.api_key_name.is_some()
+        || input.channel_name.is_some()
+        || input.model.is_some()
+        || input.date_from.is_some()
+        || input.date_to.is_some();
+
+    let logs = if has_search {
+        repo.search_logs(
+            input.keyword.as_deref(),
+            input.api_key_name.as_deref(),
+            input.channel_name.as_deref(),
+            input.model.as_deref(),
+            input.date_from.as_deref(),
+            input.date_to.as_deref(),
+            limit,
+            offset,
+        ).await
+    } else {
+        repo.get_logs(limit, offset).await
+    };
+
+    logs.map_err(|e| e.to_string()).map(|ls| ls.into_iter().map(Into::into).collect())
 }
 
 #[tauri::command]

@@ -27,9 +27,20 @@ export const apiKeyApi = {
   delete: (id: string) => invoke<void>("delete_api_key", { id }),
 };
 
+export interface GetLogsInput {
+  limit?: number;
+  offset?: number;
+  keyword?: string;
+  api_key_name?: string;
+  channel_name?: string;
+  model?: string;
+  date_from?: string;
+  date_to?: string;
+}
+
 // Log commands
 export const logApi = {
-  getAll: (limit?: number, offset?: number) => invoke<RequestLog[]>("get_logs", { limit, offset }),
+  getAll: (input?: GetLogsInput) => invoke<RequestLog[]>("get_logs", { input: input || {} }),
   get: (id: string) => invoke<RequestLog>("get_log", { id }),
   getStats: (days?: number) => invoke<LogStats[]>("get_log_stats", { days }),
   delete: (id: string) => invoke<void>("delete_log", { id }),

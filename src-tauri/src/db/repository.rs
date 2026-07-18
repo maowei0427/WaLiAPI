@@ -282,6 +282,61 @@ impl Repository {
         .await
     }
 
+    pub async fn search_logs(
+        &self,
+        keyword: Option<&str>,
+        api_key_name: Option<&str>,
+        channel_name: Option<&str>,
+        model: Option<&str>,
+        date_from: Option<&str>,
+        date_to: Option<&str>,
+        limit: i64,
+        offset: i64,
+    ) -> Result<Vec<RequestLog>, sqlx::Error> {
+        let mut q = sqlx::QueryBuilder::new("SELECT * FROM request_logs WHERE 1=1");
+
+        if let Some(kw) = keyword {
+            let pattern = format!("%{}%", kw);
+            q.push(" AND (api_key_name LIKE ").push_bind(pattern.clone());
+            q.push(" OR channel_name LIKE ").push_bind(pattern.clone());
+            q.push(" OR model LIKE ").push_bind(pattern.clone());
+            q.push(" OR upstream_model LIKE ").push_bind(pattern.clone());
+            q.push(" OR api_key_id LIKE ").push_bind(pattern.clone());
+            q.push(" OR id LIKE ").push_bind(pattern);
+            q.push(")");
+        }
+
+        if let Some(name) = api_key_name {
+            let pattern = format!("%{}%", name);
+            q.push(" AND api_key_name LIKE ").push_bind(pattern);
+        }
+
+        if let Some(name) = channel_name {
+            let pattern = format!("%{}%", name);
+            q.push(" AND channel_name LIKE ").push_bind(pattern);
+        }
+
+        if let Some(m) = model {
+            let pattern = format!("%{}%", m);
+            q.push(" AND (model LIKE ").push_bind(pattern.clone());
+            q.push(" OR upstream_model LIKE ").push_bind(pattern);
+            q.push(")");
+        }
+
+        if let Some(from) = date_from {
+            q.push(" AND created_at >= ").push_bind(from);
+        }
+
+        if let Some(to) = date_to {
+            q.push(" AND created_at <= ").push_bind(to);
+        }
+
+        q.push(" ORDER BY created_at DESC LIMIT ").push_bind(limit);
+        q.push(" OFFSET ").push_bind(offset);
+
+        q.build_query_as::<RequestLog>().fetch_all(&self.pool).await
+    }
+
     pub async fn get_dashboard_stats(&self) -> Result<DashboardStats, sqlx::Error> {
         let today = chrono::Utc::now().format("%Y-%m-%d").to_string();
         let today_prefix = format!("{}%", today);

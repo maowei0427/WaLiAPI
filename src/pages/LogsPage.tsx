@@ -5,6 +5,7 @@ import { formatTime, formatDuration, formatNumber } from "../lib/constants";
 import {
   ScrollText, RefreshCw, Trash2, ChevronDown, ChevronRight, AlertCircle,
   Bot, User, Wrench, Terminal, Eye, FileCode2, Image, ArrowRightLeft, Shield, Timer, Coins,
+  Search, X, Calendar, Key, Server, Box,
 } from "lucide-react";
 
 const PAGE_SIZE = 20;
@@ -102,15 +103,45 @@ export function LogsPage() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [showCleanModal, setShowCleanModal] = useState(false);
 
+  // Search filters
+  const [showSearch, setShowSearch] = useState(false);
+  const [keyword, setKeyword] = useState("");
+  const [filterApiKey, setFilterApiKey] = useState("");
+  const [filterChannel, setFilterChannel] = useState("");
+  const [filterModel, setFilterModel] = useState("");
+  const [filterDateFrom, setFilterDateFrom] = useState("");
+  const [filterDateTo, setFilterDateTo] = useState("");
+
+  const hasActiveFilters = keyword || filterApiKey || filterChannel || filterModel || filterDateFrom || filterDateTo;
+
   const load = useCallback((p: number = 0) => {
     setLoading(true);
-    logApi.getAll(PAGE_SIZE, p * PAGE_SIZE)
+    logApi.getAll({
+      limit: PAGE_SIZE,
+      offset: p * PAGE_SIZE,
+      keyword: keyword || undefined,
+      api_key_name: filterApiKey || undefined,
+      channel_name: filterChannel || undefined,
+      model: filterModel || undefined,
+      date_from: filterDateFrom || undefined,
+      date_to: filterDateTo || undefined,
+    })
       .then(setLogs)
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, []);
+  }, [keyword, filterApiKey, filterChannel, filterModel, filterDateFrom, filterDateTo]);
 
   useEffect(() => { load(0); }, [load]);
+
+  const clearFilters = () => {
+    setKeyword("");
+    setFilterApiKey("");
+    setFilterChannel("");
+    setFilterModel("");
+    setFilterDateFrom("");
+    setFilterDateTo("");
+    setPage(0);
+  };
 
   const handleDeleteLog = async (id: string) => {
     try {
@@ -147,6 +178,14 @@ export function LogsPage() {
           <p className="mt-1.5 text-sm text-muted-foreground">查看请求结果、Token 消耗、工具调用与网关路由详情</p>
         </div>
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowSearch(!showSearch)}
+            className={`action-secondary ${hasActiveFilters ? "text-blue-600 bg-blue-50" : ""}`}
+            title="搜索"
+          >
+            <Search size={16} />
+            {hasActiveFilters && <span className="ml-1 text-xs">筛选中</span>}
+          </button>
           <button onClick={() => setShowCleanModal(true)} className="action-secondary text-red-500">
             <Trash2 size={16} /> 清理
           </button>
@@ -155,6 +194,95 @@ export function LogsPage() {
           </button>
         </div>
       </div>
+
+      {/* Search Panel */}
+      {showSearch && (
+        <div className="mx-7 mb-4 p-4 surface rounded-[16px] shrink-0">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-medium text-slate-700 flex items-center gap-2">
+              <Search size={14} /> 搜索筛选
+            </h3>
+            <div className="flex items-center gap-2">
+              {hasActiveFilters && (
+                <button onClick={clearFilters} className="text-xs text-slate-500 hover:text-slate-700 flex items-center gap-1">
+                  <X size={12} /> 清除筛选
+                </button>
+              )}
+              <button onClick={() => setShowSearch(false)} className="text-slate-400 hover:text-slate-600">
+                <X size={16} />
+              </button>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            {/* Keyword search */}
+            <div className="relative">
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                placeholder="关键词搜索 (密钥/渠道/模型/ID)"
+                value={keyword}
+                onChange={(e) => { setKeyword(e.target.value); setPage(0); }}
+                className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+              />
+            </div>
+            {/* API Key filter */}
+            <div className="relative">
+              <Key size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                placeholder="密钥名称"
+                value={filterApiKey}
+                onChange={(e) => { setFilterApiKey(e.target.value); setPage(0); }}
+                className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+              />
+            </div>
+            {/* Channel filter */}
+            <div className="relative">
+              <Server size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                placeholder="渠道名称"
+                value={filterChannel}
+                onChange={(e) => { setFilterChannel(e.target.value); setPage(0); }}
+                className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+              />
+            </div>
+            {/* Model filter */}
+            <div className="relative">
+              <Box size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                placeholder="模型名称"
+                value={filterModel}
+                onChange={(e) => { setFilterModel(e.target.value); setPage(0); }}
+                className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+              />
+            </div>
+            {/* Date from */}
+            <div className="relative">
+              <Calendar size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="date"
+                placeholder="开始日期"
+                value={filterDateFrom}
+                onChange={(e) => { setFilterDateFrom(e.target.value); setPage(0); }}
+                className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+              />
+            </div>
+            {/* Date to */}
+            <div className="relative">
+              <Calendar size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="date"
+                placeholder="结束日期"
+                value={filterDateTo}
+                onChange={(e) => { setFilterDateTo(e.target.value); setPage(0); }}
+                className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Table area — fills remaining height, scrolls internally */}
       <div className="flex-1 overflow-hidden px-7 pb-7 min-h-0">
@@ -173,6 +301,7 @@ export function LogsPage() {
                   <thead className="sticky top-0 z-10 border-b border-border bg-white/90 backdrop-blur text-muted-foreground">
                     <tr>
                       <th className="w-8 px-3 py-3"></th>
+                      <th className="w-16 px-2 py-3 text-left font-medium">#</th>
                       <th className="w-32 px-3 py-3 text-left font-medium">时间</th>
                       <th className="w-24 px-3 py-3 text-left font-medium">密钥</th>
                       <th className="w-24 px-3 py-3 text-left font-medium">渠道</th>
@@ -251,6 +380,7 @@ function LogRow({
             {expanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
           </button>
         </td>
+        <td className="px-2 py-2.5 text-xs text-muted-foreground/60 font-mono whitespace-nowrap">#{log.id}</td>
         <td className="px-3 py-2.5 text-xs text-muted-foreground whitespace-nowrap overflow-hidden">{formatTime(log.created_at)}</td>
         <td className="px-3 py-2.5 text-xs overflow-hidden truncate">{log.api_key_name || "-"}</td>
         <td className="px-3 py-2.5 text-xs overflow-hidden truncate">{log.channel_name || "-"}</td>
@@ -282,7 +412,7 @@ function LogRow({
       </tr>
       {expanded && (
         <tr>
-          <td colSpan={9} className="px-4 py-4 bg-slate-50/80 border-b border-border">
+          <td colSpan={10} className="px-4 py-4 bg-slate-50/80 border-b border-border">
             <LogDetail log={log} />
           </td>
         </tr>
