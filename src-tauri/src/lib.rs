@@ -31,6 +31,7 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_shell::init())
+        .plugin(tauri_plugin_dialog::init())
         .plugin(
             tauri_plugin_sql::Builder::default()
                 .add_migrations(
@@ -148,6 +149,13 @@ pub fn run() {
             commands::security::create_custom_security_rule,
             commands::security::toggle_custom_security_rule,
             commands::security::delete_custom_security_rule,
+            commands::import_export::export_channels,
+            commands::import_export::import_walicode_backup,
+            commands::import_export::import_waliapi_export,
+            commands::import_export::scan_local_ai_configs,
+            commands::import_export::import_scanned_sources,
+            commands::import_export::pick_import_file,
+            commands::import_export::save_export_file,
         ])
         .build(tauri::generate_context!())
         .expect("error while building WaLiAPI")

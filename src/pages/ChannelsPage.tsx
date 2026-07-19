@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
-import { channelApi } from "../lib/api";
+import { useEffect, useState, useRef } from "react";
+import { channelApi, importExportApi } from "../lib/api";
 import type { Channel } from "../types";
 import { CHANNEL_TYPES, formatTime } from "../lib/constants";
-import { Plus, Radio, Trash2, Zap, Power, Edit, Gauge, Boxes } from "lucide-react";
+import { Plus, Radio, Trash2, Zap, Power, Edit, Gauge, Boxes, Download, ChevronDown, Upload, Loader2 } from "lucide-react";
 import { ChannelForm } from "../components/ChannelForm";
+import { ImportDialog } from "../components/ImportDialog";
 
 export function ChannelsPage() {
   const [channels, setChannels] = useState<Channel[]>([]);
@@ -11,10 +12,37 @@ export function ChannelsPage() {
   const [editing, setEditing] = useState<Channel | null>(null);
   const [testing, setTesting] = useState<string | null>(null);
   const [testResult, setTestResult] = useState<Record<string, { success: boolean; message: string; latency_ms: number }>>({});
+  const [showImport, setShowImport] = useState(false);
+  const [showImportMenu, setShowImportMenu] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const importMenuRef = useRef<HTMLDivElement>(null);
 
   const load = () => channelApi.getAll().then(setChannels).catch(() => {});
 
   useEffect(() => { load(); }, []);
+
+  // Close import menu on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (importMenuRef.current && !importMenuRef.current.contains(e.target as Node)) {
+        setShowImportMenu(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      const content = await importExportApi.exportChannels();
+      const timestamp = new Date().toISOString().slice(0, 10);
+      await importExportApi.saveExportFile(content, `waliapi-export-${timestamp}.json`);
+    } catch (e) {
+      console.error("Export failed:", e);
+    }
+    setExporting(false);
+  };
 
   const handleTest = async (id: string) => {
     setTesting(id);
@@ -51,9 +79,45 @@ export function ChannelsPage() {
           <h1 className="page-title">渠道管理</h1>
           <p className="page-subtitle">配置上游供应商、模型能力与调度优先级</p>
         </div>
-        <button onClick={() => { setEditing(null); setShowForm(true); }} className="action-primary">
-          <Plus size={16} /> 新建渠道
-        </button>
+        <div className="flex items-center gap-2">
+          {/* Export button */}
+          <button
+            onClick={handleExport}
+            disabled={exporting}
+            className="action-secondary flex items-center gap-1.5"
+          >
+            {exporting ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
+            导出
+          </button>
+          {/* Import dropdown */}
+          <div className="relative" ref={importMenuRef}>
+            <button
+              onClick={() => setShowImportMenu(!showImportMenu)}
+              className="action-secondary flex items-center gap-1.5"
+            >
+              <Upload size={16} />
+              导入
+              <ChevronDown size={14} className={`transition-transform ${showImportMenu ? "rotate-180" : ""}`} />
+            </button>
+            {showImportMenu && (
+              <div className="absolute right-0 top-full mt-1.5 z-40 w-64 rounded-2xl border border-border bg-white p-2 shadow-xl">
+                <button
+                  onClick={() => { setShowImportMenu(false); setShowImport(true); }}
+                  className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm transition-all hover:bg-muted/60"
+                >
+                  <Upload size={16} className="text-muted-foreground" />
+                  <div className="text-left">
+                    <div>导入渠道</div>
+                    <div className="text-xs text-muted-foreground">WaLiAPI 导出 / 扫描本地 / WaLiCode 备份</div>
+                  </div>
+                </button>
+              </div>
+            )}
+          </div>
+          <button onClick={() => { setEditing(null); setShowForm(true); }} className="action-primary">
+            <Plus size={16} /> 新建渠道
+          </button>
+        </div>
       </div>
 
       {channels.length === 0 ? (
@@ -180,6 +244,13 @@ export function ChannelsPage() {
           editing={editing}
           onClose={() => { setShowForm(false); setEditing(null); }}
           onSaved={() => { setShowForm(false); setEditing(null); load(); }}
+        />
+      )}
+
+      {showImport && (
+        <ImportDialog
+          onClose={() => setShowImport(false)}
+          onImported={() => load()}
         />
       )}
     </div>

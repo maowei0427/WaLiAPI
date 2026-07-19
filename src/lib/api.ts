@@ -69,6 +69,37 @@ export const serverApi = {
   restart: () => invoke<void>("restart_server"),
 };
 
+// Import / Export
+export interface ImportResult {
+  imported: number;
+  skipped: number;
+  errors: string[];
+}
+
+export interface ScannedSource {
+  source: string;
+  name: string;
+  base_url: string;
+  api_key: string;
+  models: string[];
+  api_format: string;
+  raw: Record<string, unknown>;
+}
+
+export interface ScanResult {
+  sources: ScannedSource[];
+}
+
+export const importExportApi = {
+  exportChannels: () => invoke<string>("export_channels"),
+  importWalicodeBackup: (content: string) => invoke<ImportResult>("import_walicode_backup", { content }),
+  importWaliapiExport: (content: string) => invoke<ImportResult>("import_waliapi_export", { content }),
+  scanLocalAiConfigs: () => invoke<ScanResult>("scan_local_ai_configs"),
+  importScannedSources: (sources: ScannedSource[]) => invoke<ImportResult>("import_scanned_sources", { sources }),
+  pickImportFile: () => invoke<string | null>("pick_import_file"),
+  saveExportFile: (content: string, defaultName: string) => invoke<boolean>("save_export_file", { content, defaultName }),
+};
+
 // Security rules
 export const securityApi = {
   getBuiltinRules: () => invoke<BuiltinRule[]>("get_builtin_security_rules"),
