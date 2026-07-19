@@ -170,40 +170,47 @@ public class XapiTest {
                 </button>
               </div>
             </div>
-            <div className="surface-soft rounded-2xl p-4 md:col-span-2">
-              <div className="mb-2 flex items-center gap-2 text-sm font-medium text-slate-600"><KeyRound size={14} /> API Key</div>
-              <div className="flex gap-2">
-                <select value={selKey} onChange={e => setSelKey(e.target.value)} className="flex-1 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-mono text-slate-900 shadow-sm">
-                  {keys.length === 0 && <option value="">请先创建密钥</option>}
-                  {keys.map(k => <option key={k.id} value={k.key}>{k.name} ({k.key.slice(0, 12)}...)</option>)}
-                </select>
-                <button onClick={() => selKey && copy(selKey, "key")} disabled={!selKey} className="action-secondary px-3 py-2 disabled:opacity-50">
-                  {copied === "key" ? <Check size={16} className="text-emerald-700" /> : <Copy size={16} />}
-                </button>
-              </div>
-            </div>
-            <div className="surface-soft rounded-2xl p-4">
-              <div className="mb-2 flex items-center gap-2 text-sm font-medium text-slate-600"><Bot size={14} /> Model</div>
-              <div className="flex gap-2">
-                <div className="relative flex-1">
-                  <select value={selModel} onChange={e => setSelModel(e.target.value)} className="flex-1 w-full appearance-none rounded-2xl border border-slate-200 bg-white px-4 py-3 pr-9 text-sm font-mono text-slate-900 shadow-sm cursor-pointer">
-                    {models.length === 0 && <option value="">请先配置渠道</option>}
-                    {modelList.real.length > 0 && (
-                      <optgroup label="实际模型">
-                        {modelList.real.map(m => <option key={m} value={m}>{m}</option>)}
-                      </optgroup>
-                    )}
-                    {modelList.mapped.length > 0 && (
-                      <optgroup label="映射模型">
-                        {modelList.mapped.map(m => <option key={m} value={m}>{m}</option>)}
-                      </optgroup>
-                    )}
-                  </select>
-                  <ChevronDown size={14} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <div className="surface-soft rounded-2xl p-4 md:col-span-3">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div>
+                  <div className="mb-2 flex items-center gap-2 text-sm font-medium text-slate-600"><KeyRound size={14} /> API Key</div>
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <select value={selKey} onChange={e => setSelKey(e.target.value)} className="flex-1 w-full appearance-none rounded-2xl border border-slate-200 bg-white px-4 py-3 pr-9 text-sm font-mono text-slate-900 shadow-sm cursor-pointer">
+                        {keys.length === 0 && <option value="">请先创建密钥</option>}
+                        {keys.map(k => <option key={k.id} value={k.key}>{k.name} ({k.key.slice(0, 12)}...)</option>)}
+                      </select>
+                      <ChevronDown size={14} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                    </div>
+                    <button onClick={() => selKey && copy(selKey, "key")} disabled={!selKey} className="action-secondary px-3 py-2 disabled:opacity-50">
+                      {copied === "key" ? <Check size={16} className="text-emerald-700" /> : <Copy size={16} />}
+                    </button>
+                  </div>
                 </div>
-                <button onClick={() => selModel && copy(selModel, "model")} disabled={!selModel} className="action-secondary px-3 py-2 disabled:opacity-50">
-                  {copied === "model" ? <Check size={16} className="text-emerald-700" /> : <Copy size={16} />}
-                </button>
+                <div>
+                  <div className="mb-2 flex items-center gap-2 text-sm font-medium text-slate-600"><Bot size={14} /> Model</div>
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <select value={selModel} onChange={e => setSelModel(e.target.value)} className="flex-1 w-full appearance-none rounded-2xl border border-slate-200 bg-white px-4 py-3 pr-9 text-sm font-mono text-slate-900 shadow-sm cursor-pointer">
+                        {models.length === 0 && <option value="">请先配置渠道</option>}
+                        {modelList.real.length > 0 && (
+                          <optgroup label="实际模型">
+                            {modelList.real.map(m => <option key={m} value={m}>{m}</option>)}
+                          </optgroup>
+                        )}
+                        {modelList.mapped.length > 0 && (
+                          <optgroup label="映射模型">
+                            {modelList.mapped.map(m => <option key={m} value={m}>{m}</option>)}
+                          </optgroup>
+                        )}
+                      </select>
+                      <ChevronDown size={14} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                    </div>
+                    <button onClick={() => selModel && copy(selModel, "model")} disabled={!selModel} className="action-secondary px-3 py-2 disabled:opacity-50">
+                      {copied === "model" ? <Check size={16} className="text-emerald-700" /> : <Copy size={16} />}
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
