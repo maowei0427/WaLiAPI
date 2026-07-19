@@ -66,7 +66,7 @@ export function Sidebar() {
             key={to}
             to={to}
             className={({ isActive }) =>
-              `group flex items-center gap-3 rounded-2xl px-4 py-3 text-sm transition-all ${
+              `group flex items-center gap-3 rounded-2xl px-4 py-3 text-sm transition-colors ${
                 isActive || (to === "/" && location.pathname === "/")
                   ? "border border-blue-100 bg-white text-slate-900 shadow-[0_8px_18px_rgba(15,23,42,0.05)]"
                   : "text-slate-600 hover:bg-white/70 hover:text-slate-900"
@@ -96,7 +96,7 @@ export function Sidebar() {
           <div className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-white px-3 py-3 text-xs text-slate-500">
             <Server size={14} className={serverStatus?.running ? "text-emerald-500" : "text-rose-500"} />
             <div className="min-w-0 flex-1">
-              <div className="mb-1">访问地址</div>
+              <div className="mb-1">API BaseUrl 地址</div>
               <div className="truncate font-mono text-[12px] text-slate-700">
                 {serverStatus?.running ? serverStatus.url : "等待服务启动"}
               </div>
