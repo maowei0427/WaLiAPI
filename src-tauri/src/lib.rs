@@ -79,10 +79,10 @@ pub fn run() {
     let log_dir = exe_dir.join("logs");
     std::fs::create_dir_all(&log_dir).ok();
     
-    // 按天滚动日志：文件名前缀 app.log（如 app.log.2026-08-25），最多保留 7 个文件
+    // 按天滚动日志：文件名前缀 waliapi.log（如 waliapi.log.2026-08-25），最多保留 7 个文件
     let file_appender = tracing_appender::rolling::Builder::new()
         .rotation(tracing_appender::rolling::Rotation::DAILY)
-        .filename_prefix("app.log")
+        .filename_prefix("waliapi.log")
         .max_log_files(7)
         .build(&log_dir)
         .ok();

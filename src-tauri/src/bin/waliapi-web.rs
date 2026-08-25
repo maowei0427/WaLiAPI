@@ -72,24 +72,18 @@ async fn main() {
     let log_dir = exe_dir.join("logs");
     std::fs::create_dir_all(&log_dir).ok();
     
-    // 创建日志文件路径
-    let log_file_path = log_dir.join("waliapi-web.log");
-    
-    // 同时输出到控制台和文件
-    let file = std::fs::OpenOptions::new()
-        .create(true)
-        .append(true)
-        .open(&log_file_path)
+    // 按天滚动日志：文件名前缀 waliapi-web.log（如 waliapi-web.log.2026-08-25），最多保留 7 个文件
+    let file_appender = tracing_appender::rolling::Builder::new()
+        .rotation(tracing_appender::rolling::Rotation::DAILY)
+        .filename_prefix("waliapi-web.log")
+        .max_log_files(7)
+        .build(&log_dir)
         .ok();
-    
-    let subscriber = tracing_subscriber::fmt();
-    
-    if let Some(file) = file {
-        use tracing_subscriber::fmt::writer::MakeWriterExt;
-        let writer = tracing_subscriber::fmt::writer::BoxMakeWriter::new(
-            std::io::stdout.and(file)
-        );
-        subscriber.with_writer(writer).init();
+
+    // 统一输出到文件；构建失败时回退到标准输出
+    let subscriber = tracing_subscriber::fmt().with_max_level(tracing::Level::INFO);
+    if let Some(file_appender) = file_appender {
+        subscriber.with_writer(file_appender).init();
     } else {
         subscriber.init();
     }
