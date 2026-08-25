@@ -79,46 +79,20 @@ pub fn run() {
     let log_dir = exe_dir.join("logs");
     std::fs::create_dir_all(&log_dir).ok();
     
-    // 创建日志文件路径
-    let log_file_path = log_dir.join("waliapi.log");
-    
-    // 打开日志文件
-    let file = std::fs::OpenOptions::new()
-        .create(true)
-        .append(true)
-        .open(&log_file_path)
+    // 按天滚动日志：文件名前缀 app.log（如 app.log.2026-08-25），最多保留 7 个文件
+    let file_appender = tracing_appender::rolling::Builder::new()
+        .rotation(tracing_appender::rolling::Rotation::DAILY)
+        .filename_prefix("app.log")
+        .max_log_files(7)
+        .build(&log_dir)
         .ok();
-    
-    // Debug 模式：同时输出到控制台和文件
-    // Release 模式：只输出到文件（避免触发控制台窗口）
-    #[cfg(debug_assertions)]
-    {
-        use tracing_subscriber::fmt::writer::MakeWriterExt;
-        let subscriber = tracing_subscriber::fmt()
-            .with_max_level(tracing::Level::INFO);
-        
-        if let Some(file) = file {
-            let writer = tracing_subscriber::fmt::writer::BoxMakeWriter::new(
-                std::io::stdout.and(file)
-            );
-            subscriber.with_writer(writer).init();
-        } else {
-            subscriber.init();
-        }
-    }
-    
-    #[cfg(not(debug_assertions))]
-    {
-        if let Some(file) = file {
-            let subscriber = tracing_subscriber::fmt()
-                .with_max_level(tracing::Level::INFO)
-                .with_writer(file);
-            subscriber.init();
-        } else {
-            let subscriber = tracing_subscriber::fmt()
-                .with_max_level(tracing::Level::INFO);
-            subscriber.init();
-        }
+
+    // 统一输出到文件；构建失败时回退到标准输出
+    let subscriber = tracing_subscriber::fmt().with_max_level(tracing::Level::INFO);
+    if let Some(file_appender) = file_appender {
+        subscriber.with_writer(file_appender).init();
+    } else {
+        subscriber.init();
     }
 
     tauri::Builder::default()
