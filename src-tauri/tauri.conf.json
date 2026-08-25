@@ -42,6 +42,11 @@
   },
   "plugins": {
     "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEMxNjAzQkFFODNGNEFBNzQKUldSMHF2U0RyanRnd2ZuV0pKNWRPUlNFeUdkWC85VFI4emRxd3haeEJZdWlURlZqUkR3eW5SK3IK",
+      "endpoints": [
+        "https://gitcode.net/KnowledgePlanet/waliapi/-/raw/v0.1.1/latest.json",
+        "https://github.com/KnowledgePlanet/waliapi/releases/latest/download/latest.json"
+      ]
     }
   }
 }
