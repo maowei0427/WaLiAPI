@@ -81,26 +81,44 @@ pub fn run() {
     
     // 创建日志文件路径
     let log_file_path = log_dir.join("waliapi.log");
-    println!("log_file_path: {:?}", log_file_path);
     
-    // 同时输出到控制台和文件
+    // 打开日志文件
     let file = std::fs::OpenOptions::new()
         .create(true)
         .append(true)
         .open(&log_file_path)
         .ok();
     
-    let subscriber = tracing_subscriber::fmt()
-        .with_max_level(tracing::Level::INFO);
-    
-    if let Some(file) = file {
+    // Debug 模式：同时输出到控制台和文件
+    // Release 模式：只输出到文件（避免触发控制台窗口）
+    #[cfg(debug_assertions)]
+    {
         use tracing_subscriber::fmt::writer::MakeWriterExt;
-        let writer = tracing_subscriber::fmt::writer::BoxMakeWriter::new(
-            std::io::stdout.and(file)
-        );
-        subscriber.with_writer(writer).init();
-    } else {
-        subscriber.init();
+        let subscriber = tracing_subscriber::fmt()
+            .with_max_level(tracing::Level::INFO);
+        
+        if let Some(file) = file {
+            let writer = tracing_subscriber::fmt::writer::BoxMakeWriter::new(
+                std::io::stdout.and(file)
+            );
+            subscriber.with_writer(writer).init();
+        } else {
+            subscriber.init();
+        }
+    }
+    
+    #[cfg(not(debug_assertions))]
+    {
+        if let Some(file) = file {
+            let subscriber = tracing_subscriber::fmt()
+                .with_max_level(tracing::Level::INFO)
+                .with_writer(file);
+            subscriber.init();
+        } else {
+            let subscriber = tracing_subscriber::fmt()
+                .with_max_level(tracing::Level::INFO);
+            subscriber.init();
+        }
     }
 
     tauri::Builder::default()
