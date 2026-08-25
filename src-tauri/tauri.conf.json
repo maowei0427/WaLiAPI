@@ -39,13 +39,5 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ]
-  },
-  "plugins": {
-    "updater": {
-      "endpoints": [
-        "https://github.com/fuzhengwei/WaLiAPI/releases/latest/download/latest.json",
-        "https://gitcode.com/fuzhengwei/WaLiAPI/releases/latest/download/latest.json"
-      ]
-    }
   }
 }
